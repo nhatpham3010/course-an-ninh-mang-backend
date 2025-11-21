@@ -9,6 +9,8 @@ import {
   getCTFData,
   getCtfById,
   createCtf,
+  updateCtf,
+  deleteCtf,
   submitCtfAnswer,
 } from "../controllers/ctfController.js";
 import authenticateToken from "../middleware/authMiddleware.js";
@@ -96,6 +98,77 @@ router.get("/:id", authenticateToken, getCtfById);
  *               $ref: '#/components/schemas/SuccessResponse'
  */
 router.post("/", authenticateToken, createCtf);
+
+/**
+ * @swagger
+ * /api/ctf/{id}:
+ *   put:
+ *     summary: Update CTF (admin)
+ *     tags: [CTF]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               ten:
+ *                 type: string
+ *               loaictf:
+ *                 type: string
+ *               tacgia:
+ *                 type: string
+ *               choai:
+ *                 type: string
+ *               mota:
+ *                 type: string
+ *               pdf_url:
+ *                 type: string
+ *               points:
+ *                 type: integer
+ *               duration:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: CTF updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ */
+router.put("/:id", authenticateToken, updateCtf);
+
+/**
+ * @swagger
+ * /api/ctf/{id}:
+ *   delete:
+ *     summary: Delete CTF (admin)
+ *     tags: [CTF]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: CTF deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ */
+router.delete("/:id", authenticateToken, deleteCtf);
 
 /**
  * @swagger

@@ -221,6 +221,103 @@ export const createCtf = async (ctfData) => {
 };
 
 /**
+ * Update CTF
+ * @param {number} id - CTF ID
+ * @param {Object} ctfData - CTF data to update
+ * @returns {Promise<Object>} - Updated CTF
+ */
+export const updateCtf = async (id, ctfData) => {
+  const { ten, mota, loaictf, tacgia, choai, pdf_url, points, duration } = ctfData;
+  
+  // Check if CTF exists
+  const existingCtf = await getCtfById(id);
+  if (!existingCtf) {
+    throw new Error("CTF không tồn tại");
+  }
+
+  const updateFields = [];
+  const updateValues = [];
+  let paramIndex = 1;
+
+  if (ten !== undefined) {
+    updateFields.push(`ten = $${paramIndex}`);
+    updateValues.push(ten);
+    paramIndex++;
+  }
+  if (mota !== undefined) {
+    updateFields.push(`mota = $${paramIndex}`);
+    updateValues.push(mota);
+    paramIndex++;
+  }
+  if (loaictf !== undefined) {
+    updateFields.push(`loaictf = $${paramIndex}`);
+    updateValues.push(loaictf);
+    paramIndex++;
+  }
+  if (tacgia !== undefined) {
+    updateFields.push(`tacgia = $${paramIndex}`);
+    updateValues.push(tacgia);
+    paramIndex++;
+  }
+  if (choai !== undefined) {
+    updateFields.push(`choai = $${paramIndex}`);
+    updateValues.push(choai);
+    paramIndex++;
+  }
+  if (pdf_url !== undefined) {
+    updateFields.push(`pdf_url = $${paramIndex}`);
+    updateValues.push(pdf_url);
+    paramIndex++;
+  }
+  if (points !== undefined) {
+    updateFields.push(`points = $${paramIndex}`);
+    updateValues.push(points);
+    paramIndex++;
+  }
+  if (duration !== undefined) {
+    updateFields.push(`duration = $${paramIndex}`);
+    updateValues.push(duration);
+    paramIndex++;
+  }
+
+  if (updateFields.length === 0) {
+    throw new Error("Không có field nào để update");
+  }
+
+  updateValues.push(id);
+  const query = `
+    UPDATE ${CTFModel.tableName}
+    SET ${updateFields.join(", ")}
+    WHERE id = $${paramIndex}
+    RETURNING *
+  `;
+
+  const result = await pool.query(query, updateValues);
+  return result.rows[0];
+};
+
+/**
+ * Delete CTF
+ * @param {number} id - CTF ID
+ * @returns {Promise<Object>} - Deleted CTF
+ */
+export const deleteCtf = async (id) => {
+  // Check if CTF exists
+  const existingCtf = await getCtfById(id);
+  if (!existingCtf) {
+    throw new Error("CTF không tồn tại");
+  }
+
+  // Delete related records in ctf_user first
+  await pool.query(`DELETE FROM ctf_user WHERE ctf_id = $1`, [id]);
+
+  // Delete CTF
+  const query = `DELETE FROM ${CTFModel.tableName} WHERE id = $1 RETURNING *`;
+  const result = await pool.query(query, [id]);
+  return result.rows[0];
+};
+
+/**
  * Submit CTF answer
  * @param {number} userId - User ID
  * @param {number} ctfId - CTF ID

@@ -6,6 +6,8 @@ import {
   getCTFData as getCTFDataService,
   getCtfById as getCtfByIdService,
   createCtf as createCtfService,
+  updateCtf as updateCtfService,
+  deleteCtf as deleteCtfService,
   submitCtfAnswer as submitCtfAnswerService,
 } from "../services/ctfService.js";
 import { sendSuccess, sendError, ERROR_CODES } from "../utils/responseHandler.js";
@@ -102,6 +104,75 @@ export const createCtf = async (req, res) => {
       return sendError(res, ERROR_CODES.CTF_REQUIRED_FIELDS_MISSING);
     }
     return sendError(res, ERROR_CODES.SERVER_ERROR, "Lỗi server khi tạo CTF");
+  }
+};
+
+/**
+ * Update CTF
+ */
+export const updateCtf = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { ten, mota, loaictf, tacgia, choai, pdf_url, points, duration } = req.body;
+
+    if (!id) {
+      return sendError(res, ERROR_CODES.VALIDATION_ERROR, "Thiếu ID CTF");
+    }
+
+    const ctfId = parseInt(id, 10);
+    if (isNaN(ctfId)) {
+      return sendError(res, ERROR_CODES.VALIDATION_ERROR, "ID CTF không hợp lệ");
+    }
+
+    const ctf = await updateCtfService(ctfId, {
+      ten,
+      mota,
+      loaictf,
+      tacgia,
+      choai,
+      pdf_url,
+      points,
+      duration,
+    });
+
+    return sendSuccess(res, presentCTF(ctf), "Cập nhật CTF thành công");
+  } catch (error) {
+    console.error("Error updating CTF:", error);
+    if (error.message.includes("CTF không tồn tại")) {
+      return sendError(res, ERROR_CODES.CTF_NOT_FOUND);
+    }
+    if (error.message.includes("Không có field")) {
+      return sendError(res, ERROR_CODES.VALIDATION_ERROR, error.message);
+    }
+    return sendError(res, ERROR_CODES.SERVER_ERROR, "Lỗi server khi cập nhật CTF");
+  }
+};
+
+/**
+ * Delete CTF
+ */
+export const deleteCtf = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return sendError(res, ERROR_CODES.VALIDATION_ERROR, "Thiếu ID CTF");
+    }
+
+    const ctfId = parseInt(id, 10);
+    if (isNaN(ctfId)) {
+      return sendError(res, ERROR_CODES.VALIDATION_ERROR, "ID CTF không hợp lệ");
+    }
+
+    const ctf = await deleteCtfService(ctfId);
+
+    return sendSuccess(res, presentCTF(ctf), "Xóa CTF thành công");
+  } catch (error) {
+    console.error("Error deleting CTF:", error);
+    if (error.message.includes("CTF không tồn tại")) {
+      return sendError(res, ERROR_CODES.CTF_NOT_FOUND);
+    }
+    return sendError(res, ERROR_CODES.SERVER_ERROR, "Lỗi server khi xóa CTF");
   }
 };
 
