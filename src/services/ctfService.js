@@ -169,8 +169,33 @@ export const getCTFData = async (userId, filters = {}) => {
  * Get CTF by ID with user submission status
  */
 export const getCtfById = async (id, userId = null) => {
-  const ctf = await getOne(CTFModel.tableName, id);
-  if (!ctf) return null;
+  // Query with duration formatted as string to avoid INTERVAL object issues
+  // Format INTERVAL as "X minutes" or "X hours Y minutes"
+  const ctfQuery = await pool.query(
+    `SELECT 
+      id, ten, mota, loaictf, tacgia, choai, points, pdf_url,
+      CASE 
+        WHEN duration IS NULL THEN NULL
+        WHEN EXTRACT(EPOCH FROM duration)::INTEGER < 60 THEN 
+          EXTRACT(EPOCH FROM duration)::INTEGER || ' seconds'
+        WHEN EXTRACT(EPOCH FROM duration)::INTEGER < 3600 THEN
+          (EXTRACT(EPOCH FROM duration)::INTEGER / 60)::INTEGER || ' minutes'
+        ELSE
+          (EXTRACT(EPOCH FROM duration)::INTEGER / 3600)::INTEGER || ' hour' ||
+          CASE 
+            WHEN (EXTRACT(EPOCH FROM duration)::INTEGER % 3600) > 0 THEN
+              ' ' || ((EXTRACT(EPOCH FROM duration)::INTEGER % 3600) / 60)::INTEGER || ' minutes'
+            ELSE ''
+          END
+      END AS duration
+    FROM ${CTFModel.tableName} 
+    WHERE id = $1`,
+    [id]
+  );
+  
+  if (ctfQuery.rows.length === 0) return null;
+  
+  const ctf = ctfQuery.rows[0];
   
   // If userId is provided, check if user has submitted answer
   if (userId) {
