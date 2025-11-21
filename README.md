@@ -6,7 +6,9 @@ CREATE TABLE users (
     ten VARCHAR(100),
     matkhau VARCHAR(255),
     email VARCHAR(100) UNIQUE,
-    ngaysinh DATE
+    ngaysinh DATE,
+    role VARCHAR(50) DEFAULT 'user',
+    course_type VARCHAR(50) DEFAULT 'free' -- 'free', 'basic', 'premium', 'year'
 );
 
 -- Bảng KHOÁ HỌC
@@ -94,7 +96,8 @@ CREATE TABLE lab (
     id SERIAL PRIMARY KEY,
     ten VARCHAR(200),
     loai VARCHAR(100),
-    mota TEXT
+    mota TEXT,
+    pdf_url TEXT -- URL của file PDF bài tập lab
 );
 
 -- Bảng LAB_USER
@@ -112,15 +115,35 @@ CREATE TABLE ctf (
     mota TEXT,
     loaictf VARCHAR(100),
     tacgia VARCHAR(100),
-    choai VARCHAR(100)
+    choai VARCHAR(100),
+    points INT DEFAULT 0, -- Điểm thưởng khi hoàn thành CTF
+    duration INTERVAL, -- Thời lượng ước tính (ví dụ: '30 minutes', '1 hour')
+    pdf_url TEXT -- URL của file PDF bài tập CTF
 );
 
 -- Bảng CTF_USER
 CREATE TABLE ctf_user (
     user_id INT,
     ctf_id INT,
-    tiendo INT,
+    tiendo INT, -- Tiến độ (0-100), 100 = hoàn thành
+    dap_an TEXT, -- Đáp án dạng text đã nộp
+    dap_an_file TEXT, -- URL của file đáp án đã nộp
     PRIMARY KEY (user_id, ctf_id)
+);
+
+-- Bảng THANH TOÁN
+CREATE TABLE thanhtoan (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL,
+    ho_ten VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    so_dien_thoai VARCHAR(20),
+    phuong_thuc_thanh_toan VARCHAR(50) NOT NULL, -- 'bank_transfer', 'momo', etc.
+    ten_goi VARCHAR(100) NOT NULL, -- 'Gói Cơ Bản', 'Gói Nâng Cao', 'Gói Năm'
+    so_tien NUMERIC NOT NULL,
+    ngay_thanh_toan TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    trang_thai VARCHAR(50) DEFAULT 'pending', -- 'pending', 'completed', 'rejected'
+    hinh_anh_chung_minh TEXT -- URL của hình ảnh chứng minh thanh toán (từ Cloudinary)
 );
 
 -- Bảng CHỦ ĐỀ AI
@@ -138,6 +161,16 @@ CREATE TABLE hoidapai (
     cautraloi TEXT,
     thoigian TIMESTAMP,
     id_chudeai INT
+);
+
+-- Bảng PASSWORD RESET TOKENS
+CREATE TABLE password_reset_tokens (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL,
+    token VARCHAR(255) NOT NULL,
+    expiry TIMESTAMP NOT NULL,
+    used BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- KHOÁ NGOẠI
@@ -176,17 +209,26 @@ ALTER TABLE ctf_user
     ADD CONSTRAINT fk_ctfuser_user FOREIGN KEY (user_id) REFERENCES users(id),
     ADD CONSTRAINT fk_ctfuser_ctf FOREIGN KEY (ctf_id) REFERENCES ctf(id);
 
+ALTER TABLE thanhtoan
+    ADD CONSTRAINT fk_thanhtoan_user FOREIGN KEY (user_id) REFERENCES users(id);
+
 ALTER TABLE chudeai
     ADD CONSTRAINT fk_chudeai_user FOREIGN KEY (userid) REFERENCES users(id);
 
 ALTER TABLE hoidapai
     ADD CONSTRAINT fk_hoidapai_chudeai FOREIGN KEY (id_chudeai) REFERENCES chudeai(id);
 
-INSERT INTO users (ten, matkhau, email, ngaysinh) VALUES
-('Nguyen Van A', 'hashed_pass_1', 'a@infosec.test', '1995-04-12'),
-('Tran Thi B', 'hashed_pass_2', 'b@infosec.test', '1997-11-03'),
-('Le Van C', 'hashed_pass_3', 'c@infosec.test', '1992-08-20'),
-('Pham Thi D', 'hashed_pass_4', 'd@infosec.test', '2000-01-30');
+ALTER TABLE password_reset_tokens
+    ADD CONSTRAINT fk_password_reset_user FOREIGN KEY (user_id) REFERENCES users(id);
+
+-- ============================
+-- 1) USERS (users)
+-- ============================
+INSERT INTO users (ten, matkhau, email, ngaysinh, role, course_type) VALUES
+('Nguyen Van A', 'hashed_pass_1', 'a@infosec.test', '1995-04-12', 'user', 'free'),
+('Tran Thi B', 'hashed_pass_2', 'b@infosec.test', '1997-11-03', 'user', 'free'),
+('Le Van C', 'hashed_pass_3', 'c@infosec.test', '1992-08-20', 'user', 'free'),
+('Pham Thi D', 'hashed_pass_4', 'd@infosec.test', '2000-01-30', 'user', 'free');
 
 -- ============================
 -- 2) BÀI KIỂM TRA (baikiemtra)
@@ -267,18 +309,18 @@ INSERT INTO tag (mota, id_khoahoc) VALUES
 -- ============================
 -- 8) LAB (lab) — môi trường thực hành
 -- ============================
-INSERT INTO lab (ten, loai, mota) VALUES
-('Lab: Môi trường sandbox mẫu', 'cloud', 'Sandbox để phân tích file nghi ngờ'),
-('Lab: Virtual Web App (vuln)', 'vm', 'Ứng dụng web có lỗ hổng để pentest'),
-('Lab: Network Packet Capture', 'network', 'Ghi lại và phân tích packet');
+INSERT INTO lab (ten, loai, mota, pdf_url) VALUES
+('Lab: Môi trường sandbox mẫu', 'cloud', 'Sandbox để phân tích file nghi ngờ', NULL),
+('Lab: Virtual Web App (vuln)', 'vm', 'Ứng dụng web có lỗ hổng để pentest', NULL),
+('Lab: Network Packet Capture', 'network', 'Ghi lại và phân tích packet', NULL);
 
 -- ============================
 -- 9) CTF (ctf) — thử thách/CTF
 -- ============================
-INSERT INTO ctf (ten, mota, loaictf, tacgia, choai) VALUES
-('CTF: Forensics 101', 'Khóa Forensics cơ bản: tìm file ẩn, decode', 'Forensics', 'TeamX', 'Sinh viên'),
-('CTF: Web Exploit Challenge', 'Thử thách SQLi & XSS', 'Web', 'TeamY', 'Mọi người'),
-('CTF: Malware Reversing', 'Task nhỏ reverse một binary', 'Reversing', 'TeamZ', 'Người học');
+INSERT INTO ctf (ten, mota, loaictf, tacgia, choai, points, duration, pdf_url) VALUES
+('CTF: Forensics 101', 'Khóa Forensics cơ bản: tìm file ẩn, decode', 'Forensics', 'TeamX', 'Sinh viên', 50, '30 minutes', NULL),
+('CTF: Web Exploit Challenge', 'Thử thách SQLi & XSS', 'Web', 'TeamY', 'Mọi người', 75, '45 minutes', NULL),
+('CTF: Malware Reversing', 'Task nhỏ reverse một binary', 'Reversing', 'TeamZ', 'Người học', 100, '60 minutes', NULL);
 
 -- ============================
 -- 10) CHỦ ĐỀ AI (chudeai) và HỎI ĐÁP AI (hoidapai)
@@ -305,10 +347,10 @@ INSERT INTO lab_user (user_id, lab_id, tiendo) VALUES
 -- ============================
 -- 12) CTF_USER (ctf_user) — tiến độ CTF
 -- ============================
-INSERT INTO ctf_user (user_id, ctf_id, tiendo) VALUES
-(1, 1, 50),
-(2, 2, 100),
-(4, 3, 0);
+INSERT INTO ctf_user (user_id, ctf_id, tiendo, dap_an, dap_an_file) VALUES
+(1, 1, 50, NULL, NULL),
+(2, 2, 100, 'lozo{flag_example}', NULL),
+(4, 3, 0, NULL, NULL);
 
 -- ============================
 -- 13) USER_KHOAHOC (user_khoahoc) — user ghi danh khoá
@@ -338,3 +380,10 @@ INSERT INTO user_baikiemtra (user_id, baikiemtra_id, trangthai, diemso, ngayhoan
 (2, 1, 'completed', 85, '2025-07-01'),
 (1, 1, 'completed', 70, '2025-07-02'),
 (3, 2, 'in-progress', NULL, NULL);
+
+-- ============================
+-- 16) THANH TOÁN (thanhtoan) — quản lý thanh toán gói học
+-- ============================
+INSERT INTO thanhtoan (user_id, ho_ten, email, so_dien_thoai, phuong_thuc_thanh_toan, ten_goi, so_tien, trang_thai, hinh_anh_chung_minh) VALUES
+(1, 'Nguyen Van A', 'a@infosec.test', '0123456789', 'bank_transfer', 'Gói Cơ Bản', 39000, 'completed', 'https://cloudinary.com/example/proof1.jpg'),
+(2, 'Tran Thi B', 'b@infosec.test', '0987654321', 'bank_transfer', 'Gói Nâng Cao', 89000, 'pending', 'https://cloudinary.com/example/proof2.jpg');

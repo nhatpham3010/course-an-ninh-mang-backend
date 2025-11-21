@@ -49,7 +49,10 @@ export const getUserTopics = async (req, res) => {
 // Query 2: GET /api/topics/:topicId/qa
 export const getTopicQA = async (req, res) => {
   try {
-    const topicId = parseInt(req.params.topicId);
+    const topicId = parseInt(req.params.topicId, 10);
+    if (isNaN(topicId)) {
+      return res.status(400).json({ error: "Topic ID không hợp lệ" });
+    }
     const query = `SELECT id, cauhoi, cautraloi, thoigian, id_chudeai FROM hoidapai WHERE id_chudeai = $1 ORDER BY thoigian ASC;`;
     const result = await pool.query(query, [topicId]);
     res.json(result.rows);

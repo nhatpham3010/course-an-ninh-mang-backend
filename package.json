@@ -1,6 +1,7 @@
 {
   "name": "be_anninhmang",
   "version": "1.0.0",
+  "type": "module",
   "main": "src/server.js",
   "engines": {
     "node": "22.x"
@@ -8,16 +9,18 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/server.js",
-    "vercel-start": "node src/server.js"
+    "vercel-start": "node src/server.js",
+    "dev": "npm run swagger:build && nodemon src/server.js",
+    "swagger:build": "node scripts/buildSwagger.js",
+    "swagger:serve": "swagger-ui-express swagger/swagger.json"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.917.0",
-    "@aws-sdk/s3-request-presigner": "^3.917.0",
     "bcrypt": "^6.0.0",
+    "cloudinary": "^1.41.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
@@ -25,6 +28,11 @@
     "mammoth": "^1.11.0",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.9",
-    "pg": "^8.16.3"
+    "pg": "^8.16.3",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
   }
 }

@@ -12,30 +12,24 @@ import cors from "cors";
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import courseRoutes from "./routes/courseRoutes.js";
+import labRoutes from "./routes/labRoutes.js";
+import ctfRoutes from "./routes/ctfRoutes.js";
 import chatbotRoutes from "./routes/chatbotRoutes.js";
 import authenticateToken from "./middleware/authMiddleware.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
+import { swaggerSpec, swaggerUi, swaggerOptions } from "./config/swagger.js";
 // import { ipnHandler } from "./controllers/paymentController.js";
 dotenv.config();
 const app = express();
-const allowedOrigins = [
-  process.env.CLIENT_URL || "http://localhost:3000",
-  "https://courseanninhmang.vercel.app",
-  "https://lozoacademy.com.vn",
-];
+
+// Allow all CORS
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true, // Nếu dùng cookie hoặc auth token
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    credentials: false,
   })
 );
 
@@ -48,6 +42,9 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Swagger Documentation
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerOptions));
+
 // Xử lý các yêu cầu preflight cho tất cả các route
 // app.options("/*", cors());
 
@@ -55,6 +52,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/auth", authRoutes);
 app.use("/api/user", authenticateToken, userRoutes);
 app.use("/api/courses", authenticateToken, courseRoutes);
+app.use("/api/labs", labRoutes);
+app.use("/api/ctf", ctfRoutes);
 app.use("/api/chatbot", authenticateToken, chatbotRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/upload", authenticateToken, uploadRoutes);
@@ -79,3 +78,13 @@ app.use((err, req, res, next) => {
 
 // Vercel yêu cầu export default để hoạt động như một serverless function
 export default app;
+
+// Start server when running directly (not in Vercel)
+// Vercel sets VERCEL env variable, so we only start server when not on Vercel
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 8000;
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server running at http://0.0.0.0:${PORT}`);
+    console.log(`📚 Swagger docs available at http://localhost:${PORT}/api-docs`);
+  });
+}

@@ -1,30 +1,161 @@
+/**
+ * @swagger
+ * tags:
+ *   name: Courses
+ *   description: Course management endpoints
+ */
 import express from "express";
 import {
   getAllCourses,
   getCourseDetail,
   getCourseContent,
-  getCTFData,
-  getLabsData,
   getCourses,
   uploadCourse,
-  createLab,
-  createCtf,
-  getLabById,
-  getCtfById,
+  enrollCourse,
 } from "../controllers/courseController.js";
+import authenticateToken from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.get("/", getAllCourses);
-router.get("/ctf", getCTFData);
-router.get("/lab", getLabsData);
-router.get("/lab-detail/:id", getLabById);
-router.get("/ctf-detail/:id", getCtfById);
-router.get("/management", getCourses);
-router.get("/:id", getCourseDetail);
-router.get("/:id/content", getCourseContent);
-router.post("/upload", uploadCourse);
-router.post("/lab", createLab);
-router.post("/ctf", createCtf);
+/**
+ * @swagger
+ * /api/courses:
+ *   get:
+ *     summary: Get all courses
+ *     tags: [Courses]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of courses
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ */
+router.get("/", authenticateToken, getAllCourses);
+
+/**
+ * @swagger
+ * /api/courses/management:
+ *   get:
+ *     summary: Get courses for management (admin)
+ *     tags: [Courses]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Courses management data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ */
+router.get("/management", authenticateToken, getCourses);
+
+/**
+ * @swagger
+ * /api/courses/{id}:
+ *   get:
+ *     summary: Get course detail with progress
+ *     tags: [Courses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Course ID
+ *     responses:
+ *       200:
+ *         description: Course detail
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       403:
+ *         description: Not enrolled in course
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.get("/:id", authenticateToken, getCourseDetail);
+
+/**
+ * @swagger
+ * /api/courses/{id}/content:
+ *   get:
+ *     summary: Get course content (lesson content)
+ *     tags: [Courses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Lesson ID
+ *     responses:
+ *       200:
+ *         description: Lesson content
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ */
+router.get("/:id/content", authenticateToken, getCourseContent);
+
+/**
+ * @swagger
+ * /api/courses/{id}/enroll:
+ *   post:
+ *     summary: Enroll in a course
+ *     tags: [Courses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Course ID
+ *     responses:
+ *       201:
+ *         description: Successfully enrolled
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       409:
+ *         description: Already enrolled
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.post("/:id/enroll", authenticateToken, enrollCourse);
+
+/**
+ * @swagger
+ * /api/courses/upload:
+ *   post:
+ *     summary: Upload course (admin)
+ *     tags: [Courses]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Course uploaded
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ */
+router.post("/upload", authenticateToken, uploadCourse);
 
 export default router;
